@@ -2,95 +2,90 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Metaforge Gaming Design System - All colors, gradients, fonts, animations */
+/* All colors MUST be HSL */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Gaming Theme - Dark Base */
+    --background: 220 20% 8%;
+    --background-secondary: 220 18% 12%;
+    --background-tertiary: 220 16% 16%;
+    --foreground: 220 15% 92%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Gaming Electric Blue Primary */
+    --primary: 195 100% 50%;
+    --primary-dark: 195 100% 35%;
+    --primary-light: 195 100% 65%;
+    --primary-foreground: 220 20% 8%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    /* Gaming Orange Accent */
+    --accent: 25 100% 55%;
+    --accent-dark: 25 100% 45%;
+    --accent-light: 25 100% 65%;
+    --accent-foreground: 220 20% 8%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Cards & Components */
+    --card: 220 18% 12%;
+    --card-hover: 220 16% 16%;
+    --card-foreground: 220 15% 92%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary Elements */
+    --secondary: 220 16% 20%;
+    --secondary-foreground: 220 15% 85%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted Elements */
+    --muted: 220 16% 16%;
+    --muted-foreground: 220 15% 65%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Interactive Elements */
+    --border: 220 16% 25%;
+    --input: 220 16% 16%;
+    --ring: 195 100% 50%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Status Colors */
+    --success: 120 60% 50%;
+    --success-foreground: 220 20% 8%;
+    
+    --warning: 45 100% 55%;
+    --warning-foreground: 220 20% 8%;
+    
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 220 15% 92%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Premium Gold */
+    --premium: 45 100% 65%;
+    --premium-dark: 45 100% 50%;
+    --premium-foreground: 220 20% 8%;
+
+    /* Confidence Score Colors */
+    --confidence-high: 120 60% 50%;
+    --confidence-medium: 45 100% 55%;
+    --confidence-low: 0 75% 55%;
+
+    /* Gaming Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(195 100% 50%), hsl(195 100% 35%));
+    --gradient-accent: linear-gradient(135deg, hsl(25 100% 55%), hsl(25 100% 45%));
+    --gradient-premium: linear-gradient(135deg, hsl(45 100% 65%), hsl(45 100% 50%));
+    --gradient-hero: linear-gradient(135deg, hsl(220 20% 8%), hsl(220 18% 12%));
+    --gradient-card: linear-gradient(135deg, hsl(220 18% 12%), hsl(220 16% 16%));
+
+    /* Gaming Glows & Effects */
+    --glow-primary: 0 0 30px hsl(195 100% 50% / 0.3);
+    --glow-accent: 0 0 30px hsl(25 100% 55% / 0.3);
+    --glow-premium: 0 0 30px hsl(45 100% 65% / 0.3);
+
+    /* Shadows */
+    --shadow-sm: 0 2px 8px hsl(220 20% 5% / 0.4);
+    --shadow-md: 0 4px 16px hsl(220 20% 5% / 0.5);
+    --shadow-lg: 0 8px 32px hsl(220 20% 5% / 0.6);
+
+    /* Animations */
+    --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 
     --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
@@ -100,6 +95,121 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
   }
+}
+
+@layer components {
+  /* Gaming Button Variants */
+  .btn-gaming {
+    @apply relative overflow-hidden rounded-lg px-6 py-3 font-semibold transition-all duration-300;
+    background: var(--gradient-primary);
+    box-shadow: var(--glow-primary);
+  }
+  
+  .btn-gaming:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+  }
+  
+  .btn-premium {
+    @apply relative overflow-hidden rounded-lg px-6 py-3 font-semibold transition-all duration-300;
+    background: var(--gradient-premium);
+    color: hsl(var(--premium-foreground));
+    box-shadow: var(--glow-premium);
+  }
+  
+  .btn-accent {
+    @apply relative overflow-hidden rounded-lg px-6 py-3 font-semibold transition-all duration-300;
+    background: var(--gradient-accent);
+    color: hsl(var(--accent-foreground));
+    box-shadow: var(--glow-accent);
+  }
+
+  /* Gaming Card Styles */
+  .card-gaming {
+    @apply relative rounded-lg border border-border/50 p-6 transition-all duration-300;
+    background: var(--gradient-card);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .card-gaming:hover {
+    border-color: hsl(var(--primary) / 0.5);
+    box-shadow: var(--shadow-lg), var(--glow-primary);
+    transform: translateY(-2px);
+  }
+
+  /* Confidence Score Badges */
+  .confidence-high {
+    @apply rounded-full px-3 py-1 text-sm font-medium;
+    background: hsl(var(--confidence-high) / 0.2);
+    color: hsl(var(--confidence-high));
+    border: 1px solid hsl(var(--confidence-high) / 0.3);
+  }
+  
+  .confidence-medium {
+    @apply rounded-full px-3 py-1 text-sm font-medium;
+    background: hsl(var(--confidence-medium) / 0.2);
+    color: hsl(var(--confidence-medium));
+    border: 1px solid hsl(var(--confidence-medium) / 0.3);
+  }
+  
+  .confidence-low {
+    @apply rounded-full px-3 py-1 text-sm font-medium;
+    background: hsl(var(--confidence-low) / 0.2);
+    color: hsl(var(--confidence-low));
+    border: 1px solid hsl(var(--confidence-low) / 0.3);
+  }
+
+  /* Gaming Input Styles */
+  .input-gaming {
+    @apply rounded-lg border border-border bg-input px-4 py-3 text-foreground transition-all duration-300;
+    background: hsl(var(--input));
+  }
+  
+  .input-gaming:focus {
+    outline: none;
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.2);
+  }
+
+  /* Hero Section Styles */
+  .hero-gradient {
+    background: var(--gradient-hero);
+  }
+
+  /* Navigation Styles */
+  .nav-gaming {
+    @apply border-b border-border/50 backdrop-blur-md;
+    background: hsl(var(--background) / 0.8);
+  }
+}
+
+@layer utilities {
+  .text-gradient-primary {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .text-gradient-premium {
+    background: var(--gradient-premium);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .glow-primary {
+    box-shadow: var(--glow-primary);
+  }
+  
+  .glow-accent {
+    box-shadow: var(--glow-accent);
+  }
+  
+  .glow-premium {
+    box-shadow: var(--glow-premium);
+  }
+
 }
