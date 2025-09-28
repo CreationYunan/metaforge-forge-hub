@@ -15,9 +15,13 @@ import {
   Shield,
   Sword,
   Crown,
-  CircleDot
+  CircleDot,
+  Zap,
+  Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { OptimizationResult } from "@/components/OptimizationResult";
+import { useOptimization } from "@/hooks/useOptimization";
 
 // Mock data
 const mockInventory = [
@@ -25,6 +29,8 @@ const mockInventory = [
   { id: "2", name: "Epic Steel Helmet", slot: "Helmet", rarity: "Epic", stats: { "Defense": 200, "HP": 150 } },
   { id: "3", name: "Rare Iron Boots", slot: "Boots", rarity: "Rare", stats: { "Defense": 120, "Speed": 10 } },
   { id: "4", name: "Mystic Ring of Wisdom", slot: "Ring", rarity: "Legendary", stats: { "Mana": 300, "Spell Power": 80 } },
+  { id: "5", name: "Divine Chest Armor", slot: "Chest", rarity: "Legendary", stats: { "Defense": 350, "HP": 200 } },
+  { id: "6", name: "Shadow Gloves", slot: "Gloves", rarity: "Epic", stats: { "Attack Power": 180, "Crit Chance": 8 } },
 ];
 
 const mockGems = [
@@ -48,6 +54,7 @@ export const Forge = () => {
     gameSlots.map(slot => ({ slotName: slot }))
   );
   const { toast } = useToast();
+  const { isOptimizing, optimizationResult, optimizeBuild, clearResult } = useOptimization();
 
   const addItemToSlot = (slotIndex: number, item: typeof mockInventory[0]) => {
     setBuildSlots(prev => prev.map((slot, idx) => 
@@ -99,6 +106,41 @@ export const Forge = () => {
       title: "Build saved!",
       description: `"${buildName}" has been saved with ${filledSlots} items`,
     });
+  };
+
+  const handleOptimizeBuild = async () => {
+    const filledSlots = buildSlots.filter(slot => slot.item).length;
+    if (filledSlots === 0) {
+      toast({
+        title: "No items to optimize",
+        description: "Please add at least one item to your build before optimizing",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const mockUserId = "mock-user-id"; // In real app, this would come from auth
+    const mockGameId = "mock-game-id"; // This would be mapped from selectedGame
+    
+    await optimizeBuild({ buildSlots }, mockGameId, mockUserId);
+  };
+
+  const handleApplySuggestion = (suggestion: any) => {
+    // Find the item in mockInventory based on the suggested item ID
+    const itemToApply = mockInventory.find(item => item.id === suggestion.suggestedItem.id);
+    
+    if (itemToApply) {
+      // Find the slot index to update
+      const slotIndex = buildSlots.findIndex(slot => slot.slotName === suggestion.slot);
+      
+      if (slotIndex !== -1) {
+        addItemToSlot(slotIndex, itemToApply);
+        toast({
+          title: "Suggestion Applied",
+          description: `${itemToApply.name} has been equipped to ${suggestion.slot}`,
+        });
+      }
+    }
   };
 
   const getRarityColor = (rarity: string) => {
@@ -243,7 +285,7 @@ export const Forge = () => {
                       </div>
                     ))}
                     <Separator />
-                    <div className="pt-2">
+                    <div className="pt-2 space-y-2">
                       <Button 
                         variant="hero" 
                         size="sm" 
@@ -252,6 +294,21 @@ export const Forge = () => {
                       >
                         <Save className="w-4 h-4 mr-2" />
                         Save Build
+                      </Button>
+                      
+                      <Button
+                        variant="gaming"
+                        size="sm"
+                        onClick={handleOptimizeBuild}
+                        disabled={isOptimizing}
+                        className="w-full"
+                      >
+                        {isOptimizing ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Zap className="w-4 h-4 mr-2" />
+                        )}
+                        {isOptimizing ? 'Optimizing...' : 'Optimizer'}
                       </Button>
                     </div>
                   </div>
@@ -341,6 +398,15 @@ export const Forge = () => {
           </div>
         </div>
       </div>
+
+      {/* Optimization Result Modal */}
+      {optimizationResult && (
+        <OptimizationResult
+          result={optimizationResult}
+          onApplySuggestion={handleApplySuggestion}
+          onClose={clearResult}
+        />
+      )}
     </div>
   );
 };
