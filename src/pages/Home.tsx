@@ -42,6 +42,12 @@ export const Home = () => {
       color: "text-premium"
     },
     {
+      icon: TrendingUp,
+      title: "Evaluate Agent (Optimizer)",
+      description: "AI analysis of your builds with pros, cons, and improvement suggestions",
+      color: "text-accent"
+    },
+    {
       icon: Shield,
       title: "Build Management",
       description: "Save, compare, and export your builds with detailed analytics",

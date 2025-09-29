@@ -17,6 +17,7 @@ import { Builds } from "./pages/Builds";
 import { Dashboard } from "./pages/Dashboard";
 import { Demo } from "./pages/Demo";
 import NotFound from "./pages/NotFound";
+import { AdminDashboard } from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -53,7 +54,7 @@ const App = () => {
               <Route path="/premium" element={<div className="container mx-auto px-4 py-16 text-center"><h1 className="text-3xl font-bold">Premium Features Coming Soon</h1></div>} />
               <Route path="/login" element={<div className="container mx-auto px-4 py-16 text-center"><h1 className="text-3xl font-bold">Login Page Coming Soon</h1></div>} />
               <Route path="/register" element={<div className="container mx-auto px-4 py-16 text-center"><h1 className="text-3xl font-bold">Register Page Coming Soon</h1></div>} />
-              <Route path="/admin" element={<div className="container mx-auto px-4 py-16 text-center"><h1 className="text-3xl font-bold">Admin Dashboard Coming Soon</h1></div>} />
+              <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/profile" element={<div className="container mx-auto px-4 py-16 text-center"><h1 className="text-3xl font-bold">Profile Page Coming Soon</h1></div>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
