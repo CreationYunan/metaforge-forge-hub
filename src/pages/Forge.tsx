@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,56 +7,61 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { 
   Hammer, 
-  Plus, 
-  Minus,
   Save,
-  Trash2,
-  Gem,
+  Zap,
+  Loader2,
   Shield,
   Sword,
-  Crown,
   CircleDot,
-  Zap,
-  Loader2
+  Gem
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { OptimizationResult } from "@/components/OptimizationResult";
+import { PreOptimizerAd } from "@/components/PreOptimizerAd";
 import { useOptimization } from "@/hooks/useOptimization";
+import { useAuth } from "@/hooks/useAuth";
+import { useGames } from "@/hooks/useGames";
+import { useItems } from "@/hooks/useItems";
+import { useGems } from "@/hooks/useGems";
+import { InventorySection } from "@/components/InventorySection";
+import { GemInventorySection } from "@/components/GemInventorySection";
+import { supabase } from "@/integrations/supabase/client";
+import { AddGemModal } from "@/components/AddGemModal";
 
-// Mock data
-const mockInventory = [
-  { id: "1", name: "Legendary Sword of Power", slot: "Weapon", rarity: "Legendary", stats: { "Attack Power": 450, "Crit Chance": 15 } },
-  { id: "2", name: "Epic Steel Helmet", slot: "Helmet", rarity: "Epic", stats: { "Defense": 200, "HP": 150 } },
-  { id: "3", name: "Rare Iron Boots", slot: "Boots", rarity: "Rare", stats: { "Defense": 120, "Speed": 10 } },
-  { id: "4", name: "Mystic Ring of Wisdom", slot: "Ring", rarity: "Legendary", stats: { "Mana": 300, "Spell Power": 80 } },
-  { id: "5", name: "Divine Chest Armor", slot: "Chest", rarity: "Legendary", stats: { "Defense": 350, "HP": 200 } },
-  { id: "6", name: "Shadow Gloves", slot: "Gloves", rarity: "Epic", stats: { "Attack Power": 180, "Crit Chance": 8 } },
-];
-
-const mockGems = [
-  { id: "g1", name: "Ruby of Strength", stats: { "Attack Power": 50 }, rarity: "Legendary" },
-  { id: "g2", name: "Sapphire of Defense", stats: { "Defense": 75 }, rarity: "Epic" },
-  { id: "g3", name: "Emerald of Speed", stats: { "Speed": 25 }, rarity: "Rare" },
-];
-
-const gameSlots = ["Helmet", "Chest", "Legs", "Boots", "Gloves", "Weapon", "Ring", "Necklace"];
-
-interface BuildItem {
+interface BuildSlot {
   slotName: string;
-  item?: typeof mockInventory[0];
-  gems?: typeof mockGems;
+  item?: any;
+  gems?: any[];
 }
 
 export const Forge = () => {
-  const [selectedGame, setSelectedGame] = useState("diablo4");
+  const { user, profile, isAuthenticated } = useAuth();
+  const { games, loading: gamesLoading } = useGames();
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [buildName, setBuildName] = useState("");
-  const [buildSlots, setBuildSlots] = useState<BuildItem[]>(
-    gameSlots.map(slot => ({ slotName: slot }))
-  );
+  const [buildSlots, setBuildSlots] = useState<BuildSlot[]>([]);
+  const [showPreAd, setShowPreAd] = useState(false);
+  const [showAddGemModal, setShowAddGemModal] = useState(false);
   const { toast } = useToast();
   const { isOptimizing, optimizationResult, optimizeBuild, clearResult } = useOptimization();
 
-  const addItemToSlot = (slotIndex: number, item: typeof mockInventory[0]) => {
+  const { items, loading: itemsLoading } = useItems(selectedGameId, user?.id || null);
+  const { gems, loading: gemsLoading, addGem } = useGems(selectedGameId, user?.id || null);
+
+  // Initialize slots when game is selected
+  useEffect(() => {
+    if (selectedGameId) {
+      const selectedGame = games.find(g => g.id === selectedGameId);
+      if (selectedGame?.slots) {
+        const slots = Array.isArray(selectedGame.slots) 
+          ? selectedGame.slots 
+          : [];
+        setBuildSlots(slots.map((slotName: string) => ({ slotName, gems: [] })));
+      }
+    }
+  }, [selectedGameId, games]);
+
+  const addItemToSlot = (slotIndex: number, item: any) => {
     setBuildSlots(prev => prev.map((slot, idx) => 
       idx === slotIndex ? { ...slot, item } : slot
     ));
@@ -68,13 +73,44 @@ export const Forge = () => {
     ));
   };
 
+  const addGemToSlot = (slotIndex: number, gem: any) => {
+    setBuildSlots(prev => prev.map((slot, idx) => {
+      if (idx === slotIndex && slot.item) {
+        const currentGems = slot.gems || [];
+        const maxSockets = slot.item.socket_count || 0;
+        
+        if (currentGems.length < maxSockets) {
+          return { ...slot, gems: [...currentGems, gem] };
+        } else {
+          toast({
+            title: "No socket available",
+            description: `This item only has ${maxSockets} socket(s)`,
+            variant: "destructive"
+          });
+          return slot;
+        }
+      }
+      return slot;
+    }));
+  };
+
   const calculateTotalStats = () => {
     const totals: Record<string, number> = {};
     
     buildSlots.forEach(slot => {
-      if (slot.item) {
+      if (slot.item?.stats) {
         Object.entries(slot.item.stats).forEach(([stat, value]) => {
-          totals[stat] = (totals[stat] || 0) + value;
+          totals[stat] = (totals[stat] || 0) + (value as number);
+        });
+      }
+      
+      if (slot.gems) {
+        slot.gems.forEach((gem: any) => {
+          if (gem.stats) {
+            Object.entries(gem.stats).forEach(([stat, value]) => {
+              totals[stat] = (totals[stat] || 0) + (value as number);
+            });
+          }
         });
       }
     });
@@ -82,11 +118,29 @@ export const Forge = () => {
     return totals;
   };
 
-  const saveBuild = () => {
+  const saveBuild = async () => {
+    if (!isAuthenticated || !user) {
+      toast({
+        title: "Authentication required",
+        description: "Please login to save builds",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!buildName) {
       toast({
         title: "Build name required",
         description: "Please enter a name for your build",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!selectedGameId) {
+      toast({
+        title: "Game required",
+        description: "Please select a game",
         variant: "destructive"
       });
       return;
@@ -102,13 +156,53 @@ export const Forge = () => {
       return;
     }
 
-    toast({
-      title: "Build saved!",
-      description: `"${buildName}" has been saved with ${filledSlots} items`,
-    });
+    try {
+      const buildData = {
+        name: buildName,
+        game_id: selectedGameId,
+        user_id: user.id,
+        items: buildSlots.reduce((acc, slot) => {
+          if (slot.item) {
+            acc[slot.slotName] = slot.item.id;
+          }
+          return acc;
+        }, {} as Record<string, string>),
+        gems: buildSlots.reduce((acc, slot) => {
+          if (slot.gems && slot.gems.length > 0) {
+            acc[slot.slotName] = slot.gems.map(g => g.id);
+          }
+          return acc;
+        }, {} as Record<string, string[]>),
+        type: 'forge'
+      };
+
+      const { error } = await supabase.from('builds').insert(buildData);
+
+      if (error) throw error;
+
+      toast({
+        title: "Build saved!",
+        description: `"${buildName}" has been saved with ${filledSlots} items`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to save build",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleOptimizeBuild = async () => {
+  const handleOptimizeBuild = () => {
+    if (!isAuthenticated || !user) {
+      toast({
+        title: "Authentication required",
+        description: "Please login to use optimizer",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const filledSlots = buildSlots.filter(slot => slot.item).length;
     if (filledSlots === 0) {
       toast({
@@ -119,18 +213,32 @@ export const Forge = () => {
       return;
     }
 
-    const mockUserId = "mock-user-id"; // In real app, this would come from auth
-    const mockGameId = "mock-game-id"; // This would be mapped from selectedGame
-    
-    await optimizeBuild({ buildSlots }, mockGameId, mockUserId);
+    if (!selectedGameId) {
+      toast({
+        title: "Game required",
+        description: "Please select a game",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Show pre-optimizer ad for non-premium users
+    if (!profile?.premium) {
+      setShowPreAd(true);
+    } else {
+      startOptimization();
+    }
+  };
+
+  const startOptimization = async () => {
+    setShowPreAd(false);
+    await optimizeBuild({ buildSlots }, selectedGameId!, user!.id);
   };
 
   const handleApplySuggestion = (suggestion: any) => {
-    // Find the item in mockInventory based on the suggested item ID
-    const itemToApply = mockInventory.find(item => item.id === suggestion.suggestedItem.id);
+    const itemToApply = items.find(item => item.id === suggestion.suggestedItem.id);
     
     if (itemToApply) {
-      // Find the slot index to update
       const slotIndex = buildSlots.findIndex(slot => slot.slotName === suggestion.slot);
       
       if (slotIndex !== -1) {
@@ -155,6 +263,18 @@ export const Forge = () => {
   const totalStats = calculateTotalStats();
   const filledSlots = buildSlots.filter(slot => slot.item).length;
 
+  if (!isAuthenticated) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <h1 className="text-3xl font-bold mb-4">Authentication Required</h1>
+        <p className="text-muted-foreground mb-8">Please login to use the Forge</p>
+        <Button variant="hero" asChild>
+          <a href="/login">Login</a>
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-7xl mx-auto">
@@ -175,7 +295,6 @@ export const Forge = () => {
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Build Configuration */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Game & Build Settings */}
             <Card className="card-gaming">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -186,14 +305,16 @@ export const Forge = () => {
               <CardContent className="space-y-4">
                 <div>
                   <label className="text-sm font-medium mb-2 block">Game</label>
-                  <Select value={selectedGame} onValueChange={setSelectedGame}>
+                  <Select value={selectedGameId || ""} onValueChange={setSelectedGameId}>
                     <SelectTrigger className="input-gaming">
-                      <SelectValue />
+                      <SelectValue placeholder="Select a game..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="diablo4">Diablo 4</SelectItem>
-                      <SelectItem value="raid">RAID: Shadow Legends</SelectItem>
-                      <SelectItem value="wow">World of Warcraft</SelectItem>
+                      {games.map(game => (
+                        <SelectItem key={game.id} value={game.id}>
+                          {game.game_name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -218,7 +339,7 @@ export const Forge = () => {
                     <Sword className="w-5 h-5" />
                     <span>Equipment Slots</span>
                   </div>
-                  <Badge variant="outline">{filledSlots}/{gameSlots.length} Filled</Badge>
+                  <Badge variant="outline">{filledSlots}/{buildSlots.length} Filled</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -227,15 +348,6 @@ export const Forge = () => {
                     <div key={slot.slotName} className="p-4 border border-border rounded-lg bg-background-secondary">
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="font-medium">{slot.slotName}</h4>
-                        {slot.item && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => removeItemFromSlot(index)}
-                          >
-                            <Minus className="w-4 h-4" />
-                          </Button>
-                        )}
                       </div>
 
                       {slot.item ? (
@@ -243,17 +355,35 @@ export const Forge = () => {
                           <h5 className={`font-medium ${getRarityColor(slot.item.rarity)}`}>
                             {slot.item.name}
                           </h5>
-                          <Badge variant="outline" className="text-xs">
-                            {slot.item.rarity}
-                          </Badge>
+                          <div className="flex gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {slot.item.rarity}
+                            </Badge>
+                            {slot.item.socket_count > 0 && (
+                              <Badge variant="outline" className="text-xs flex items-center gap-1">
+                                <Gem className="w-3 h-3" />
+                                {slot.gems?.length || 0}/{slot.item.socket_count}
+                              </Badge>
+                            )}
+                          </div>
                           <div className="space-y-1">
-                            {Object.entries(slot.item.stats).map(([stat, value]) => (
+                            {Object.entries(slot.item.stats || {}).map(([stat, value]) => (
                               <div key={stat} className="flex justify-between text-xs">
                                 <span className="text-muted-foreground">{stat}</span>
-                                <span className="text-accent">+{value}</span>
+                                <span className="text-accent">+{value as number}</span>
                               </div>
                             ))}
                           </div>
+                          {slot.gems && slot.gems.length > 0 && (
+                            <div className="mt-2 pt-2 border-t border-border">
+                              <p className="text-xs font-medium mb-1">Socketed Gems:</p>
+                              {slot.gems.map((gem, gIdx) => (
+                                <p key={gIdx} className={`text-xs ${getRarityColor(gem.rarity)}`}>
+                                  • {gem.name}
+                                </p>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="text-center py-4">
@@ -268,7 +398,7 @@ export const Forge = () => {
             </Card>
           </div>
 
-          {/* Sidebar - Inventory & Stats */}
+          {/* Sidebar */}
           <div className="space-y-6">
             {/* Build Stats */}
             <Card className="card-gaming">
@@ -325,79 +455,65 @@ export const Forge = () => {
               <CardHeader>
                 <CardTitle className="text-lg">Your Inventory</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {mockInventory.map((item) => (
-                  <div key={item.id} className="p-3 border border-border rounded-lg bg-background-tertiary">
-                    <div className="flex justify-between items-start mb-2">
-                      <h5 className={`text-sm font-medium ${getRarityColor(item.rarity)}`}>
-                        {item.name}
-                      </h5>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => {
-                          const slotIndex = buildSlots.findIndex(s => s.slotName === item.slot && !s.item);
-                          if (slotIndex !== -1) {
-                            addItemToSlot(slotIndex, item);
-                          } else {
-                            toast({
-                              title: "No available slot",
-                              description: `No empty ${item.slot} slot available`,
-                              variant: "destructive"
-                            });
-                          }
-                        }}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <div className="flex justify-between text-xs mb-2">
-                      <Badge variant="outline" className="text-xs">{item.slot}</Badge>
-                      <Badge variant="outline" className="text-xs">{item.rarity}</Badge>
-                    </div>
-                    <div className="space-y-1">
-                      {Object.entries(item.stats).map(([stat, value]) => (
-                        <div key={stat} className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">{stat}</span>
-                          <span className="text-accent">+{value}</span>
-                        </div>
-                      ))}
-                    </div>
+              <CardContent>
+                {itemsLoading ? (
+                  <div className="text-center py-4">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
                   </div>
-                ))}
+                ) : items.length === 0 ? (
+                  <div className="text-center py-4 text-muted-foreground text-sm">
+                    <p>No items in inventory</p>
+                    <p className="text-xs mt-1">Upload items to start building</p>
+                  </div>
+                ) : (
+                  <InventorySection
+                    items={items}
+                    usedItemIds={buildSlots.filter(s => s.item).map(s => s.item.id)}
+                    onAddToSlot={(item) => {
+                      const slotIndex = buildSlots.findIndex(s => s.slotName === item.slot && !s.item);
+                      if (slotIndex !== -1) {
+                        addItemToSlot(slotIndex, item);
+                      } else {
+                        toast({
+                          title: "No available slot",
+                          description: `No empty ${item.slot} slot available`,
+                          variant: "destructive"
+                        });
+                      }
+                    }}
+                    getRarityColor={getRarityColor}
+                  />
+                )}
               </CardContent>
             </Card>
 
-            {/* Available Gems */}
-            <Card className="card-gaming">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2 text-lg">
-                  <Gem className="w-4 h-4" />
-                  <span>Gems</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {mockGems.map((gem) => (
-                  <div key={gem.id} className="p-3 border border-border rounded-lg bg-background-tertiary">
-                    <h5 className={`text-sm font-medium ${getRarityColor(gem.rarity)} mb-2`}>
-                      {gem.name}
-                    </h5>
-                    <Badge variant="outline" className="text-xs mb-2">{gem.rarity}</Badge>
-                    <div className="space-y-1">
-                      {Object.entries(gem.stats).map(([stat, value]) => (
-                        <div key={stat} className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">{stat}</span>
-                          <span className="text-accent">+{value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            {/* Gems */}
+            <GemInventorySection
+              gems={gems}
+              getRarityColor={getRarityColor}
+              onAddGem={() => setShowAddGemModal(true)}
+            />
           </div>
         </div>
       </div>
+
+      {/* Add Gem Modal */}
+      <AddGemModal
+        open={showAddGemModal}
+        onOpenChange={setShowAddGemModal}
+        onAdd={async (gemData) => {
+          const success = await addGem(gemData);
+          return success || false;
+        }}
+      />
+
+      {/* Pre-Optimizer Ad */}
+      {showPreAd && (
+        <PreOptimizerAd
+          onContinue={startOptimization}
+          isPremium={profile?.premium}
+        />
+      )}
 
       {/* Optimization Result Modal */}
       {optimizationResult && (

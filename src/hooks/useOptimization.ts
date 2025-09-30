@@ -45,8 +45,8 @@ export const useOptimization = () => {
         throw error;
       }
 
-      if (!data.success) {
-        throw new Error(data.error || 'Optimization failed');
+      if (!data || !data.success) {
+        throw new Error(data?.error || 'Optimization failed');
       }
 
       console.log('Optimization completed:', data.result);
