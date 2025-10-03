@@ -12,7 +12,8 @@ import {
   Settings,
   AlertTriangle,
   TrendingUp,
-  FileText
+  FileText,
+  Gamepad2
 } from "lucide-react";
 
 export const AdminDashboard = () => {
@@ -51,6 +52,13 @@ export const AdminDashboard = () => {
       description: "Configure games, categories, and metadata",
       color: "accent",
       link: "/admin/games"
+    },
+    {
+      title: "Game Suggestions",
+      icon: Gamepad2,
+      description: "Review and approve user game suggestions",
+      color: "premium",
+      link: "/admin/suggestions"
     },
     {
       title: "Agent Logs",

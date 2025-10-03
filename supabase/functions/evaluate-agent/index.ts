@@ -61,6 +61,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const openaiKey = Deno.env.get('OPENAI_API_KEY');
+    const geminiKey = Deno.env.get('GOOGLE_GEMINI_VISION_KEY');
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -166,49 +167,110 @@ serve(async (req) => {
     Be specific and focus on meaningful improvements. Only suggest items that are actually available in the user's inventory.
     `;
 
-    console.log('Sending request to OpenAI');
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `You are an expert ${gameInfo.game_name} build optimizer. Provide detailed, actionable advice for improving builds based on available items and game mechanics.`
-          },
-          {
-            role: 'user',
-            content: analysisPrompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000,
-      }),
-    });
+    let evaluationResult: EvaluationResult;
+    let provider = 'none';
 
-    if (!response.ok) {
-      console.error('OpenAI API error:', response.status, response.statusText);
-      throw new Error(`OpenAI API error: ${response.status}`);
+    // Try OpenAI first
+    if (openaiKey) {
+      try {
+        console.log('Sending request to OpenAI');
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openaiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              {
+                role: 'system',
+                content: `You are an expert ${gameInfo.game_name} build optimizer. Provide detailed, actionable advice for improving builds based on available items and game mechanics.`
+              },
+              {
+                role: 'user',
+                content: analysisPrompt
+              }
+            ],
+            temperature: 0.7,
+            max_tokens: 2000,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`OpenAI API error: ${response.status}`);
+        }
+
+        const aiResponse = await response.json();
+        console.log('Received AI response from OpenAI');
+        provider = 'openai';
+
+        try {
+          evaluationResult = JSON.parse(aiResponse.choices[0].message.content);
+        } catch (parseError) {
+          console.error('Failed to parse OpenAI response:', parseError);
+          throw parseError;
+        }
+      } catch (error) {
+        console.error('OpenAI failed:', error);
+        if (!geminiKey) throw error;
+      }
     }
 
-    const aiResponse = await response.json();
-    console.log('Received AI response');
+    // Fallback to Google Gemini
+    if (!evaluationResult! && geminiKey) {
+      try {
+        console.log('Falling back to Google Gemini');
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{
+                  text: `You are an expert ${gameInfo.game_name} build optimizer.\n\n${analysisPrompt}`
+                }]
+              }]
+            }),
+          }
+        );
 
-    let evaluationResult: EvaluationResult;
-    try {
-      evaluationResult = JSON.parse(aiResponse.choices[0].message.content);
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
-      console.log('Raw AI response:', aiResponse.choices[0].message.content);
-      
-      // Fallback response
+        if (!response.ok) {
+          throw new Error(`Gemini API error: ${response.status}`);
+        }
+
+        const geminiResponse = await response.json();
+        console.log('Received AI response from Google Gemini');
+        provider = 'google_gemini';
+
+        const content = geminiResponse.candidates[0].content.parts[0].text;
+        
+        try {
+          // Try to extract JSON from the response
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            evaluationResult = JSON.parse(jsonMatch[0]);
+          } else {
+            throw new Error('No valid JSON found in Gemini response');
+          }
+        } catch (parseError) {
+          console.error('Failed to parse Gemini response:', parseError);
+          throw parseError;
+        }
+      } catch (error) {
+        console.error('Google Gemini failed:', error);
+        throw error;
+      }
+    }
+
+    // Final fallback if no AI worked
+    if (!evaluationResult!) {
+      console.log('Using fallback evaluation (no AI available)');
+      provider = 'fallback';
       evaluationResult = {
         pros: ["Build analysis completed"],
-        cons: ["Unable to parse detailed analysis"],
+        cons: ["Unable to generate detailed analysis - no AI provider available"],
         suggestions: [],
         overallScore: 70
       };
@@ -217,7 +279,7 @@ serve(async (req) => {
     // Log the analysis to agent_logs table
     await supabase.from('agent_logs').insert({
       agent_name: 'evaluate-agent',
-      input: { buildData, gameId, userId },
+      input: { buildData, gameId, userId, provider },
       output: evaluationResult,
       status: 'success',
       execution_time_ms: Date.now() - parseInt(req.headers.get('x-start-time') || '0')

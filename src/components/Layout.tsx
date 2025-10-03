@@ -31,11 +31,12 @@ export const Layout = ({ children }: LayoutProps) => {
     }
   }, [user, profile, loading, navigate]);
 
-  const navigationUser = user && profile ? {
+  // Fix: Don't wait for profile, use user immediately
+  const navigationUser = user ? {
     id: user.id,
-    username: profile.username || 'User',
-    premium: profile.premium || false,
-    role: profile.role || 'user'
+    username: profile?.username || 'User',
+    premium: profile?.premium || false,
+    role: profile?.role || 'user'
   } : null;
 
   return (

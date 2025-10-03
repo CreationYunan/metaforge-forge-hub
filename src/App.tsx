@@ -19,6 +19,10 @@ import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import NotFound from "./pages/NotFound";
 import { AdminDashboard } from "./pages/AdminDashboard";
+import { SuggestGame } from "./pages/SuggestGame";
+import { Profile } from "./pages/Profile";
+import { Premium } from "./pages/Premium";
+import { GameSuggestions } from "./pages/admin/GameSuggestions";
 
 const queryClient = new QueryClient();
 
@@ -38,11 +42,13 @@ const App = () => {
               <Route path="/builds" element={<Builds />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/demo" element={<Demo />} />
-              <Route path="/premium" element={<div className="container mx-auto px-4 py-16 text-center"><h1 className="text-3xl font-bold">Premium Features Coming Soon</h1></div>} />
+              <Route path="/premium" element={<Premium />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/profile" element={<div className="container mx-auto px-4 py-16 text-center"><h1 className="text-3xl font-bold">Profile Page Coming Soon</h1></div>} />
+              <Route path="/admin/suggestions" element={<GameSuggestions />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/suggest-game" element={<SuggestGame />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
