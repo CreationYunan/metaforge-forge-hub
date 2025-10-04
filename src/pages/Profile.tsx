@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { User, Loader2, Calendar } from "lucide-react";
+import { User, Loader2, Calendar, Upload, ArrowLeft } from "lucide-react";
 
 export const Profile = () => {
   const { user, profile, loading: authLoading } = useAuth();
@@ -16,17 +17,23 @@ export const Profile = () => {
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [bio, setBio] = useState("");
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
+  const [isUpdatingBio, setIsUpdatingBio] = useState(false);
   const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [canChangeUsername, setCanChangeUsername] = useState(true);
   const [daysUntilChange, setDaysUntilChange] = useState(0);
 
   useEffect(() => {
     if (profile) {
       setUsername(profile.username || "");
+      setBio(profile.bio || "");
+      setProfilePictureUrl(profile.profile_picture_url || null);
       
       // Check if username can be changed (30 days limit)
       if (profile.username_changed_at) {
@@ -194,22 +201,129 @@ export const Profile = () => {
     }
   };
 
+  const handleProfilePictureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.[0] || !user) return;
+    const file = e.target.files[0];
+    if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
+      toast({ title: "Invalid file", description: "Only PNG/JPG", variant: "destructive" });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Too large", description: "Max 2MB", variant: "destructive" });
+      return;
+    }
+    setIsUploadingPicture(true);
+    try {
+      const fileName = `${user.id}/${Date.now()}.${file.name.split('.').pop()}`;
+      await supabase.storage.from('profile_pictures').upload(fileName, file);
+      const { data } = supabase.storage.from('profile_pictures').getPublicUrl(fileName);
+      await supabase.from('profiles').update({ profile_picture_url: data.publicUrl }).eq('id', user.id);
+      setProfilePictureUrl(data.publicUrl);
+      toast({ title: "Picture updated" });
+    } catch (error: any) {
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
+    } finally {
+      setIsUploadingPicture(false);
+    }
+  };
+
+  const handleBioUpdate = async () => {
+    if (!user) return;
+    setIsUpdatingBio(true);
+    try {
+      await supabase.from('profiles').update({ bio }).eq('id', user.id);
+      toast({ title: "Bio updated" });
+    } catch (error: any) {
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
+    } finally {
+      setIsUpdatingBio(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto">
-        <div className="mb-8">
-          <div className="flex items-center space-x-3 mb-2">
-            <User className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl font-bold">
-              <span className="text-gradient-primary">Profile</span> Settings
-            </h1>
+        <div className="mb-8 flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <div className="flex items-center space-x-3 mb-2">
+              <User className="w-8 h-8 text-primary" />
+              <h1 className="text-3xl font-bold">
+                <span className="text-gradient-primary">Profile</span> Settings
+              </h1>
+            </div>
+            <p className="text-muted-foreground">
+              Manage your account settings and preferences
+            </p>
           </div>
-          <p className="text-muted-foreground">
-            Manage your account settings and preferences
-          </p>
         </div>
 
         <div className="space-y-6">
+          {/* Profile Picture Section */}
+          <Card className="card-gaming">
+            <CardHeader>
+              <CardTitle>Profile Picture</CardTitle>
+              <CardDescription>
+                Upload a profile picture (PNG/JPG, max 2MB)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {profilePictureUrl && (
+                <div className="flex justify-center">
+                  <img 
+                    src={profilePictureUrl} 
+                    alt="Profile" 
+                    className="w-32 h-32 rounded-full object-cover border-4 border-primary/20"
+                  />
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="picture">Upload Picture</Label>
+                <Input
+                  id="picture"
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg"
+                  onChange={handleProfilePictureUpload}
+                  disabled={isUploadingPicture}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Bio Section */}
+          <Card className="card-gaming">
+            <CardHeader>
+              <CardTitle>Bio</CardTitle>
+              <CardDescription>
+                Tell others about yourself
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="bio">Bio</Label>
+                <Textarea
+                  id="bio"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Write something about yourself..."
+                  rows={4}
+                  maxLength={500}
+                />
+              </div>
+              <Button onClick={handleBioUpdate} disabled={isUpdatingBio}>
+                {isUpdatingBio ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update Bio"
+                )}
+              </Button>
+            </CardContent>
+          </Card>
           {/* Username Section */}
           <Card className="card-gaming">
             <CardHeader>
@@ -335,12 +449,6 @@ export const Profile = () => {
               </form>
             </CardContent>
           </Card>
-        </div>
-
-        <div className="mt-6">
-          <Button variant="outline" onClick={() => navigate(-1)}>
-            ← Back
-          </Button>
         </div>
       </div>
     </div>

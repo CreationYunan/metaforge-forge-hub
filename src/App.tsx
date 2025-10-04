@@ -23,6 +23,7 @@ import { SuggestGame } from "./pages/SuggestGame";
 import { Profile } from "./pages/Profile";
 import { Premium } from "./pages/Premium";
 import { GameSuggestions } from "./pages/admin/GameSuggestions";
+import TrainingAgent from "./pages/admin/TrainingAgent";
 
 const queryClient = new QueryClient();
 
@@ -45,8 +46,9 @@ const App = () => {
               <Route path="/premium" element={<Premium />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/suggestions" element={<GameSuggestions />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/suggestions" element={<GameSuggestions />} />
+            <Route path="/admin/training" element={<TrainingAgent />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/suggest-game" element={<SuggestGame />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -25,34 +25,69 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+  let logData: {
+    agent_name: string;
+    status: 'success' | 'error';
+    input: any;
+    output: any;
+    error_message: string | null;
+    execution_time_ms: number;
+  } = {
+    agent_name: 'gameinfo-agent',
+    status: 'error',
+    input: null,
+    output: null,
+    error_message: null,
+    execution_time_ms: 0
+  };
+
   try {
-    const { gameName }: GameInfoRequest = await req.json();
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
-    if (!gameName) {
-      throw new Error('gameName is required');
+    const body = await req.json();
+    
+    // Input validation
+    if (!body || typeof body !== 'object') {
+      throw new Error('Request body must be a JSON object');
     }
-
-    console.log(`[GameInfo Agent] Processing request for: ${gameName}`);
-
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    if (!body.gameName || typeof body.gameName !== 'string') {
+      throw new Error('gameName is required and must be a string');
+    }
+    
+    const gameName = body.gameName.trim();
+    if (gameName.length === 0 || gameName.length > 100) {
+      throw new Error('gameName must be between 1 and 100 characters');
+    }
+    
+    logData.input = { gameName };
 
     // Check if game already exists
-    const { data: existingGame } = await supabase
+    const { data: existingGame } = await supabaseClient
       .from('games_info')
       .select('*')
       .eq('game_name', gameName)
       .single();
 
     if (existingGame) {
+      logData.status = 'success';
+      logData.output = { game_id: existingGame.id, provider: 'existing' };
+      logData.execution_time_ms = Date.now() - startTime;
+      
+      await supabaseClient.from('agent_logs').insert(logData);
+      
       console.log(`[GameInfo Agent] Game ${gameName} already exists`);
       return new Response(
         JSON.stringify({ 
-          success: true, 
-          message: 'Game already exists',
-          game: existingGame 
+          status: 'ok',
+          data: {
+            message: 'Game already exists',
+            game: existingGame
+          }
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -174,7 +209,7 @@ For ${gameName}, provide realistic slots, rarities, stats, perks, and gems that 
     }
 
     // Insert into database
-    const { data: newGame, error: insertError } = await supabase
+    const { data: newGame, error: insertError } = await supabaseClient
       .from('games_info')
       .insert({
         game_name: gameMetadata.game_name,
@@ -190,22 +225,21 @@ For ${gameName}, provide realistic slots, rarities, stats, perks, and gems that 
 
     if (insertError) throw insertError;
 
-    // Log to agent_logs
-    await supabase.from('agent_logs').insert({
-      agent_name: 'gameinfo-agent',
-      status: 'success',
-      input: { gameName },
-      output: { game_id: newGame.id, provider },
-      execution_time_ms: 0
-    });
+    logData.status = 'success';
+    logData.output = { game_id: newGame.id, provider };
+    logData.execution_time_ms = Date.now() - startTime;
+
+    await supabaseClient.from('agent_logs').insert(logData);
 
     console.log(`[GameInfo Agent] Successfully created game: ${gameName} using ${provider}`);
 
     return new Response(
       JSON.stringify({ 
-        success: true, 
-        game: newGame,
-        provider 
+        status: 'ok',
+        data: {
+          game: newGame,
+          provider
+        }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -213,26 +247,20 @@ For ${gameName}, provide realistic slots, rarities, stats, perks, and gems that 
   } catch (error) {
     console.error('[GameInfo Agent] Error:', error);
     
-    // Log error to agent_logs
-    try {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      
-      await supabase.from('agent_logs').insert({
-        agent_name: 'gameinfo-agent',
-        status: 'error',
-        error_message: error instanceof Error ? error.message : 'Unknown error',
-        input: {},
-        output: null,
-        execution_time_ms: 0
-      });
-    } catch {}
+    logData.error_message = error instanceof Error ? error.message : 'Unknown error';
+    logData.execution_time_ms = Date.now() - startTime;
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    await supabaseClient.from('agent_logs').insert(logData);
 
     return new Response(
       JSON.stringify({ 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+        status: 'error',
+        reason: error instanceof Error ? error.message : 'Unknown error'
       }),
       { 
         status: 500, 

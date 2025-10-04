@@ -3,5 +3,8 @@ project_id = "vhejajgurjcpoqooserp"
 [functions.evaluate-agent]
 verify_jwt = false
 
+[functions.cleanup-expired-training]
+verify_jwt = false
+
 [functions.gameinfo-agent]
 verify_jwt = false

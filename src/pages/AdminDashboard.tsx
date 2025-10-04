@@ -11,9 +11,9 @@ import {
   Activity, 
   Settings,
   AlertTriangle,
-  TrendingUp,
   FileText,
-  Gamepad2
+  Gamepad2,
+  Brain
 } from "lucide-react";
 
 export const AdminDashboard = () => {
@@ -75,10 +75,10 @@ export const AdminDashboard = () => {
       link: "/admin/reports"
     },
     {
-      title: "Training Data",
-      icon: TrendingUp,
-      description: "Manage AI training data and corrections",
-      color: "success",
+      title: "Training Agent",
+      icon: Brain,
+      description: "Manage AI training data and model versions",
+      color: "from-purple-500 to-pink-500",
       link: "/admin/training"
     },
     {
