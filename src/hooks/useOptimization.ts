@@ -32,7 +32,7 @@ export const useOptimization = () => {
     try {
       console.log('Starting build optimization for:', { gameId, userId });
       
-      const { data, error } = await supabase.functions.invoke('evaluate-agent', {
+      const { data, error } = await supabase.functions.invoke('evaluate-build-agent', {
         body: {
           buildData,
           gameId,
@@ -45,8 +45,8 @@ export const useOptimization = () => {
         throw error;
       }
 
-      if (!data || !data.success) {
-        throw new Error(data?.error || 'Optimization failed');
+      if (!data || data.status !== 'ok') {
+        throw new Error(data?.reason || 'Optimization failed');
       }
 
       console.log('Optimization completed:', data.result);

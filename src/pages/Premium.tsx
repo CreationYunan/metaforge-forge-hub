@@ -1,13 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Crown, Check, Zap, Loader2 } from "lucide-react";
+import { Crown, Check, Zap, Loader2, Star } from "lucide-react";
 
 export const Premium = () => {
   const { user, isPremium, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   if (authLoading) {
     return (
@@ -23,19 +26,48 @@ export const Premium = () => {
   }
 
   const features = [
-    "Unlimited item uploads",
-    "Priority AI processing",
-    "Advanced build analytics",
-    "Export builds to multiple formats",
-    "No ads",
+    "Unlimited AI build optimizations",
+    "Priority support",
+    "Advanced analytics",
+    "Custom build templates",
+    "Ad-free experience",
     "Early access to new games",
-    "Premium support",
-    "Custom build templates"
+    "Export builds to multiple formats"
   ];
 
-  const handlePurchase = () => {
-    // Placeholder for payment integration
-    alert("Payment integration coming soon! This will integrate with Stripe or similar payment provider.");
+  const handlePurchase = async (plan: 'monthly' | 'lifetime') => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      // Call notification agent for purchase confirmation
+      const { data, error } = await supabase.functions.invoke('notification-agent', {
+        body: {
+          type: 'premium_purchase',
+          target_user_id: user.id,
+          title: 'Premium Purchase',
+          message: `You have purchased the ${plan} premium plan`,
+          severity: 'medium',
+          metadata: { plan }
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Purchase Initiated",
+        description: `${plan === 'monthly' ? '€4,99/month' : '€39,99 lifetime'} premium plan`,
+      });
+    } catch (error) {
+      console.error('Purchase error:', error);
+      toast({
+        title: "Purchase Failed",
+        description: "Please try again later",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -102,10 +134,13 @@ export const Premium = () => {
                   {/* Pricing */}
                   <div className="text-center py-6">
                     <div className="text-4xl font-bold text-gradient-primary mb-2">
-                      $9.99<span className="text-lg text-muted-foreground">/month</span>
+                      €4,99<span className="text-lg text-muted-foreground">/Monat</span>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Cancel anytime. No hidden fees.
+                    <div className="text-2xl font-semibold text-accent mt-3">
+                      oder €39,99 <span className="text-sm text-muted-foreground">einmalig (Lifetime)</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Jederzeit kündbar. Keine versteckten Kosten.
                     </p>
                   </div>
 
@@ -127,16 +162,26 @@ export const Premium = () => {
 
                   {/* CTA */}
                   <div className="pt-6">
-                    <Button
-                      className="w-full bg-premium hover:bg-premium/90"
-                      size="lg"
-                      onClick={handlePurchase}
-                    >
-                      <Crown className="w-5 h-5 mr-2" />
-                      Upgrade to Premium
-                    </Button>
+                    <div className="space-y-3">
+                      <Button
+                        className="w-full bg-premium hover:bg-premium/90"
+                        size="lg"
+                        onClick={() => handlePurchase('monthly')}
+                      >
+                        <Crown className="w-5 h-5 mr-2" />
+                        Monatlich (€4,99)
+                      </Button>
+                      <Button
+                        className="w-full bg-gradient-to-r from-accent to-accent-dark hover:opacity-90"
+                        size="lg"
+                        onClick={() => handlePurchase('lifetime')}
+                      >
+                        <Star className="w-5 h-5 mr-2" />
+                        Lifetime (€39,99)
+                      </Button>
+                    </div>
                     <p className="text-xs text-center text-muted-foreground mt-3">
-                      Secure payment powered by Stripe
+                      Sichere Zahlung über Stripe
                     </p>
                   </div>
                 </div>

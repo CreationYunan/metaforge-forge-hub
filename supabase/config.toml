@@ -1,10 +1,41 @@
-project_id = "vhejajgurjcpoqooserp"
+project_id = "khhfxkqdztkxpokpyxmj"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db.pooler]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1"
 
 [functions.evaluate-agent]
+verify_jwt = false
+
+[functions.gameinfo-agent]
 verify_jwt = false
 
 [functions.cleanup-expired-training]
 verify_jwt = false
 
-[functions.gameinfo-agent]
+[functions.audit-agent]
+verify_jwt = false
+
+[functions.notification-agent]
+verify_jwt = false
+
+[functions.evaluate-build-agent]
+verify_jwt = false
+
+[functions.autobuild-agent]
 verify_jwt = false

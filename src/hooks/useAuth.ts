@@ -12,19 +12,20 @@ export const useAuth = () => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Fetch profile when user logs in
-        if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-        }
-      }
-    );
+    // Fix: Don't wait for profile, use user immediately
+    setSession(session);
+    setUser(session?.user ?? null);
+    
+    // Fetch profile when user logs in
+    if (session?.user) {
+      setTimeout(() => {
+        fetchProfile(session.user.id);
+      }, 0);
+    } else {
+      setProfile(null);
+    }
+  }
+);
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {

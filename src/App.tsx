@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 // Layout
 import { Layout } from "./components/Layout";
@@ -37,20 +38,23 @@ const App = () => {
           <Layout>
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/upload" element={<Upload />} />
-              <Route path="/forge" element={<Forge />} />
-              <Route path="/metaforge" element={<Metaforge />} />
-              <Route path="/builds" element={<Builds />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/demo" element={<Demo />} />
               <Route path="/premium" element={<Premium />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/suggestions" element={<GameSuggestions />} />
-            <Route path="/admin/training" element={<TrainingAgent />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/suggest-game" element={<SuggestGame />} />
+              <Route path="/demo" element={<Demo />} />
+              
+              {/* Protected Routes */}
+              <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
+              <Route path="/forge" element={<ProtectedRoute><Forge /></ProtectedRoute>} />
+              <Route path="/metaforge" element={<ProtectedRoute><Metaforge /></ProtectedRoute>} />
+              <Route path="/builds" element={<ProtectedRoute><Builds /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/suggest-game" element={<ProtectedRoute><SuggestGame /></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin/suggestions" element={<ProtectedRoute><GameSuggestions /></ProtectedRoute>} />
+              <Route path="/admin/training" element={<ProtectedRoute><TrainingAgent /></ProtectedRoute>} />
+              
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
