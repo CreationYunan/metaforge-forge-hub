@@ -25,6 +25,11 @@ import { Profile } from "./pages/Profile";
 import { Premium } from "./pages/Premium";
 import { GameSuggestions } from "./pages/admin/GameSuggestions";
 import TrainingAgent from "./pages/admin/TrainingAgent";
+import Users from "./pages/admin/Users";
+import Games from "./pages/admin/Games";
+import AgentLogs from "./pages/admin/AgentLogs";
+import Reports from "./pages/admin/Reports";
+import Settings from "./pages/admin/Settings";
 
 const queryClient = new QueryClient();
 
@@ -52,8 +57,13 @@ const App = () => {
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/suggest-game" element={<ProtectedRoute><SuggestGame /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
+              <Route path="/admin/games" element={<ProtectedRoute><Games /></ProtectedRoute>} />
               <Route path="/admin/suggestions" element={<ProtectedRoute><GameSuggestions /></ProtectedRoute>} />
+              <Route path="/admin/logs" element={<ProtectedRoute><AgentLogs /></ProtectedRoute>} />
+              <Route path="/admin/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
               <Route path="/admin/training" element={<ProtectedRoute><TrainingAgent /></ProtectedRoute>} />
+              <Route path="/admin/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
